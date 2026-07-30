@@ -33,7 +33,6 @@ export const TICKERS = [
     tickerId: 'BANKS',
     name: 'Canadian Banks Index',
     drift: 0.065,
-    /** Walk drift can differ from stated drift (TECH uses 0.13 for personality). */
     walkDrift: 0.065,
     vol: 0.1,
     seed: 17,
@@ -64,6 +63,7 @@ export const TICKERS = [
     tickerId: 'TECH',
     name: 'Cowtown Growth Tech',
     drift: 0.11,
+    /** Walk uses 13% so seeded curve hits §10 (+16.3% with mid crash); blend still uses drift. */
     walkDrift: 0.13,
     vol: 0.38,
     seed: 33,
@@ -387,7 +387,7 @@ export function deriveAll(input: DerivedInputs) {
     rebuiltGross -= clawbackMonthly
   }
 
-  // Shown on the rebuilt stub (SPEC); net matches verified reference (clawback only).
+  // Shown on the rebuilt stub (SPEC); net uses clawback-only math from §10.
   const withholdingTax = (annuity + registeredDrawdown) * 0.1
   const netMonthly = rebuiltGross
 

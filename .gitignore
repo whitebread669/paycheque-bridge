@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Minified production bundle — not source. Never build against or edit it.
+docs/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

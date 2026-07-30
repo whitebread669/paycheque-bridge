@@ -1,15 +1,13 @@
 import { TICKERS, type TickerId } from './engine'
 
-/**
- * Seeded PRNG matching the verified reference build
- * (not classic mulberry32 — same family, different constants).
- */
+/** Classic mulberry32 — SPEC §6.1 / §10. */
 export function mulberry32(seed: number): () => number {
-  let s = seed
+  let a = seed >>> 0
   return () => {
-    let t = (s += 1831565813)
-    t = Math.imul(t ^ (t >>> 15), t | 1)
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    a |= 0
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
 }
@@ -22,7 +20,12 @@ export interface PriceSeries {
 
 const cache = new Map<string, PriceSeries>()
 
-/** 252-point geometric random walk with reference noise + optional crash. */
+/**
+ * 252-point geometric random walk (SPEC §6.1):
+ *   price[t] = price[t-1] × (1 + drift/252 + vol × noise)
+ * noise = triangular approx via 3×U, scaled by 1/√252.
+ * Seeds & TECH crash at t=130 ×0.82: SPEC §10.
+ */
 export function generateSeries(tickerId: TickerId): PriceSeries {
   const cached = cache.get(tickerId)
   if (cached) return cached
@@ -33,10 +36,9 @@ export function generateSeries(tickerId: TickerId): PriceSeries {
   const rand = mulberry32(meta.seed)
   const prices: number[] = [100]
   for (let t = 1; t < 252; t++) {
-    const noise = (rand() + rand() + rand() - 1.5) / 1.5
-    let next =
-      prices[t - 1]! *
-      (1 + meta.walkDrift / 252 + (meta.vol / Math.sqrt(252)) * noise)
+    // Mean-zero noise in ~[-1, 1], then × vol / √252  ≡  vol × noise in the SPEC formula
+    const noise = (rand() + rand() + rand() - 1.5) / 1.5 / Math.sqrt(252)
+    let next = prices[t - 1]! * (1 + meta.walkDrift / 252 + meta.vol * noise)
     if (meta.crashAt !== undefined && t === meta.crashAt) {
       next *= 0.82
     }
