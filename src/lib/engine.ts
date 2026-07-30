@@ -384,11 +384,11 @@ export function deriveAll(input: DerivedInputs) {
       oas,
       ((annual - a.oasClawbackThreshold) * 0.15) / 12,
     )
-    rebuiltGross -= clawbackMonthly
   }
 
-  // Display withholding (SPEC §3 Act 5); net follows verified reference (clawback only).
+  // Withholding on registered / annuity drawdowns (SPEC Act 5 deductions)
   const withholdingTax = (annuity + registeredDrawdown) * 0.1
+  const netMonthly = rebuiltGross - clawbackMonthly - withholdingTax
 
   const health = fundedGoGoYears(
     input.buckets.health,
@@ -456,8 +456,8 @@ export function deriveAll(input: DerivedInputs) {
     registeredDrawdown,
     withholdingTax,
     oasClawbackMonthly: clawbackMonthly,
-    netMonthly: rebuiltGross,
-    grossMonthlyBeforeTax: cpp + oas + annuity + registeredDrawdown + clawbackMonthly,
+    netMonthly,
+    grossMonthlyBeforeTax: rebuiltGross,
     health,
     span,
     legacyFv,
